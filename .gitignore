@@ -41,3 +41,10 @@ Thumbs.db
 .vscode/
 .idea/
 .agents/
+
+# Local Agent Instructions & Project Logs (Engineering Playbook)
+AGENTS.md
+PROJECT.md
+PROJECT_LOG.md
+HANDOFF.md
+docs/plans/
