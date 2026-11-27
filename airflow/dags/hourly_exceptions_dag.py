@@ -7,11 +7,12 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
+from airflow.utils import timezone
 
 
 def send_sla_alerts(**context):
     # TODO: read the report result and alert if counts pass a threshold
-    print("SLA check done at", datetime.utcnow().isoformat())
+    print("SLA check done at", timezone.utcnow().isoformat())
 
 
 with DAG(
