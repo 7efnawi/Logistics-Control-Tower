@@ -1,11 +1,43 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Environment & secrets
 .env
+.env.*
+*.pem
+*.key
+
+# Logs & local data / checkpoints
 *.log
 data/
 checkpoints/
 data_*/
+*.duckdb
+*.duckdb.wal
+
+# Airflow local runtime
 airflow/logs/
 airflow/config/
 airflow/plugins/
 airflow/.env
+
+# dbt artifacts & local profiles
+dbt/**/target/
+dbt/**/dbt_packages/
+dbt/**/logs/
+dbt/.user.yml
+target/
+dbt_packages/
+logs/
+profiles.yml
+
+# OS / IDE / Agent local state
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.agents/

@@ -31,11 +31,17 @@ with DAG(
     )
     dbt_run = BashOperator(
         task_id="dbt_run",
-        bash_command="echo 'TODO: cd dbt && dbt run'",
+        bash_command=(
+            "echo 'TODO (person 4): dbt run --project-dir /opt/airflow/dbt "
+            "--profiles-dir /opt/airflow/dbt --target {{ var.value.get(\"dbt_target\", \"local\") }}'"
+        ),
     )
     dbt_test = BashOperator(
         task_id="dbt_test",
-        bash_command="echo 'TODO: cd dbt && dbt test'",
+        bash_command=(
+            "echo 'TODO (person 4): dbt test --project-dir /opt/airflow/dbt "
+            "--profiles-dir /opt/airflow/dbt --target {{ var.value.get(\"dbt_target\", \"local\") }}'"
+        ),
     )
 
     refresh_master >> daily_facts >> load_pool >> dbt_run >> dbt_test
