@@ -5,3 +5,7 @@ __pycache__/
 data/
 checkpoints/
 data_*/
+airflow/logs/
+airflow/config/
+airflow/plugins/
+airflow/.env
