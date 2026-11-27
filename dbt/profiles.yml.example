@@ -1,0 +1,24 @@
+# Copy this file to profiles.yml (gitignored) for local & Azure Synapse runs.
+# Usage:
+#   Local (DuckDB, free):  dbt run --project-dir dbt --profiles-dir dbt --target local
+#   Azure (Synapse Pool):  dbt run --project-dir dbt --profiles-dir dbt --target synapse
+
+logistics_control_tower:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', 'data/local_warehouse.duckdb') }}"
+      threads: 4
+
+    synapse:
+      type: synapse
+      driver: 'ODBC Driver 18 for SQL Server'
+      server: "{{ env_var('SYNAPSE_SERVER') }}"
+      port: 1433
+      database: "{{ env_var('SYNAPSE_DB') }}"
+      schema: marts
+      authentication: sql
+      user: "{{ env_var('SYNAPSE_USER') }}"
+      password: "{{ env_var('SYNAPSE_PASSWORD') }}"
+      threads: 4
