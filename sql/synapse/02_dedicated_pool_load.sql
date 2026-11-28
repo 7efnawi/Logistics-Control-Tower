@@ -20,7 +20,7 @@ END;
 GO
 
 COPY INTO dbo.daily_shipment_facts
-FROM 'https://<storage_account>.dfs.core.windows.net/gold/daily_shipment_facts/*.parquet'
+FROM 'https://adlslogisticsdepi19.dfs.core.windows.net/gold/daily_shipment_facts/*.parquet'
 WITH (
     FILE_TYPE = 'PARQUET',
     CREDENTIAL = (IDENTITY = 'Managed Identity')

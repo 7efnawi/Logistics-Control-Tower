@@ -4,52 +4,64 @@
 
 ---
 
-## 1. Resource Group & ADLS Gen2 (Data Lake)
-1. **Create Resource Group** (e.g. `rg-lct-depi19`), pick one region (e.g. `East US` or `West Europe`) and keep **all** resources in the **same region** to avoid egress charges and latency.
-2. **Create Storage Account (ADLS Gen2)**:
-   - Performance: `Standard` | Redundancy: `LRS` (cheapest for dev/project).
-   - **Advanced tab → Enable Hierarchical Namespace (`Data Lake Storage Gen2`)**: **MUST BE CHECKED** (cannot be enabled after creation).
-3. **Create Containers** (confirm final names in Day 2 Data Contract):
-   - `bronze` (raw batch CSV/JSON + streaming JSON drops)
-   - `silver` (`shipment_events`, `shipment_status`, `last_ping` Delta tables)
-   - `gold` (`daily_shipment_facts` Parquet/Delta)
-   - `checkpoints` (Spark Structured Streaming `_chk/` folders)
-   - `synapse` (default filesystem for Synapse Workspace)
+## 0. Provisioned Environment (Completed 2026-11-28)
+
+| Resource | Configured Value | Notes / Cost State |
+|---|---|---|
+| **Subscription** | `Azure for Students` | Policy allows: `spaincentral`, `francecentral`, `denmarkeast`, `uaenorth`, `austriaeast` |
+| **Resource Group** | `rg-logistics-control-tower` | Shared container for project resources |
+| **Region** | `France Central` (`francecentral`) | Full Synapse/Spark support & low latency from Egypt |
+| **Storage Account (ADLS Gen2)** | `adlslogisticsdepi19` | `Standard` · `LRS` · `Big Data Analytics` · **Hierarchical Namespace enabled** |
+| **Containers** | `bronze`, `silver`, `gold`, `checkpoints`, `synapse` | Private access |
+| **Synapse Workspace** | `synapse-logistics-depi19` | Linked to `adlslogisticsdepi19/synapse`; Managed Identity has `Storage Blob Data Contributor` |
+| **Built-in Serverless SQL** | `Built-in` | `Online` · Pay per TB scanned ($0 idle) |
+| **Apache Spark Pool** | `spark01` | `Small (4 vCores / 32 GB)` · 3 nodes · **Auto-pause enabled** |
+| **Dedicated SQL Pool** | `lct_dw` | `DW100c` · **`Paused`** ($0/hr compute while paused) |
+
+### Endpoints & Non-Secret Connection Info
+- **ADLS Gen2 DFS Base URL:** `https://adlslogisticsdepi19.dfs.core.windows.net/`
+- **Dedicated SQL Endpoint:** `synapse-logistics-depi19.sql.azuresynapse.net` (Database: `lct_dw`)
+- **Serverless SQL Endpoint:** `synapse-logistics-depi19-ondemand.sql.azuresynapse.net`
+- **Synapse Studio:** Open via Azure Portal → `synapse-logistics-depi19` → **Open Synapse Studio**
 
 ---
 
-## 2. Synapse Workspace
-1. **Create Azure Synapse Analytics Workspace**:
-   - Link to the ADLS Gen2 account above + select container `synapse`.
-   - Set SQL Administrator login & password (save these securely — never commit to Git).
-   - **Networking**: Allow Azure services and resources to access this workspace; add your team's client IPs (or `0.0.0.0 - 255.255.255.255` temporarily during dev if team IPs change often — tighten before demo if needed).
-2. **Assign Permissions (Crucial for Team & Serverless/COPY INTO)**:
-   - On the **Storage Account → Access Control (IAM)**:
-     - Grant **`Storage Blob Data Contributor`** to the **Synapse Workspace Managed Identity**.
-     - Grant **`Storage Blob Data Contributor`** to **all 5 team members** (so Simulator, Spark jobs, and SQL queries can read/write ADLS).
-   - Inside **Synapse Studio → Manage → Access control**:
-     - Grant **`Synapse Administrator`** (or **`Synapse SQL Administrator`** + **`Apache Spark Administrator`**) to the team members who run Spark/SQL.
+## 1. Resource Group & ADLS Gen2 (Data Lake) — Done
+1. **Create Resource Group** (`rg-logistics-control-tower`). Note: Educational/student subscriptions may restrict regions via Azure Policy (`RequestDisallowedByAzure`); check `Policy -> Assignments -> Parameters` if blocked.
+2. **Create Storage Account (`adlslogisticsdepi19`)**:
+   - Region: `France Central` | Workload: `Big Data Analytics` | Performance: `Standard` | Redundancy: `LRS`.
+   - **Advanced tab → Enable Hierarchical Namespace (`Data Lake Storage Gen2`)**: **Checked**.
+3. **Create Containers**: `bronze`, `silver`, `gold`, `checkpoints`, `synapse`.
+
+---
+
+## 2. Synapse Workspace & Team Permissions
+1. **Create Azure Synapse Analytics Workspace (`synapse-logistics-depi19`)** — Done:
+   - Linked to `adlslogisticsdepi19` + container `synapse` in `France Central`.
+   - Networking: public access enabled during dev.
+2. **Storage & Studio Permissions**:
+   - `adlslogisticsdepi19` → `Access Control (IAM)` → **`Storage Blob Data Contributor`** granted to `synapse-logistics-depi19` Managed Identity (**Done**).
+   - **Pending (when teammates share emails):**
+     - Grant **`Storage Blob Data Contributor`** on `adlslogisticsdepi19` to all 5 team members.
+     - Inside **Synapse Studio → Manage → Access control**, grant **`Synapse Administrator`** (or SQL/Spark roles) to the team.
 
 ---
 
 ## 3. Compute Pools & Cost Control (Read Carefully!)
-| Resource | Billing Model | Setup & Cost Rule |
+| Resource | Billing Model | Current Setup & Cost Rule |
 |---|---|---|
-| **Built-in Serverless SQL** | Pay per TB scanned (~$5/TB, 10 MB min) | Always on, zero idle cost. Use for live `silver` views (`OPENROWSET`). |
-| **Apache Spark Pool** | Pay per vCore-hour while active | Smallest node size (`Small 4 vCores`), min 3 nodes, enable **Auto-pause = 5–15 mins**. |
-| **Dedicated SQL Pool** | **Pay per hour continuously while running (even idle!)** | Create at **DW100c** (minimum). **Pause immediately after creation!** |
-
-> **Golden Rule:** Never leave the Dedicated SQL Pool running overnight. Only `Resume` it when loading `daily_shipment_facts`, running `dbt run --target synapse`, or during demos — then **`Pause`** immediately after.
+| **Built-in Serverless SQL (`Built-in`)** | Pay per TB scanned (~$5/TB, 10 MB min) | `Online` — zero idle cost. Use for live `silver` views (`OPENROWSET`). |
+| **Apache Spark Pool (`spark01`)** | Pay per vCore-hour while active | `Small (4 vCores)`, 3 nodes, **Auto-pause enabled**. |
+| **Dedicated SQL Pool (`lct_dw`)** | **Pay per hour continuously while running (even idle!)** | `DW100c` — **`Paused`**. Only `Resume` when loading `daily_shipment_facts`, running `dbt --target synapse`, or demoing! |
 
 ---
 
 ## 4. Connecting `dbt-synapse` Locally
-1. Resume the Dedicated SQL Pool and copy its **Dedicated SQL endpoint**:
-   `<workspace-name>.sql.azuresynapse.net`
+1. In Synapse Studio (`Manage -> SQL pools`), **`Resume`** `lct_dw` (wait ~1–2 minutes until `Online`).
 2. In your local PowerShell session (never commit credentials):
    ```powershell
-   $env:SYNAPSE_SERVER   = "<workspace-name>.sql.azuresynapse.net"
-   $env:SYNAPSE_DB       = "<dedicated_pool_name>"
+   $env:SYNAPSE_SERVER   = "synapse-logistics-depi19.sql.azuresynapse.net"
+   $env:SYNAPSE_DB       = "lct_dw"
    $env:SYNAPSE_USER     = "<sql_admin_user>"
    $env:SYNAPSE_PASSWORD = "<sql_admin_password>"
    ```
@@ -57,4 +69,4 @@
    ```powershell
    .\.venv\Scripts\dbt.exe debug --project-dir dbt --profiles-dir dbt --target synapse
    ```
-4. When finished testing: **Pause the Dedicated SQL Pool** in Azure Portal / Synapse Studio.
+4. **Immediately after testing:** **`Pause`** `lct_dw` in Synapse Studio (`Manage -> SQL pools`).

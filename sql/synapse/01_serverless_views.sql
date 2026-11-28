@@ -14,7 +14,7 @@
 CREATE OR ALTER VIEW dbo.vw_shipment_status_live AS
 SELECT *
 FROM OPENROWSET(
-    BULK 'https://<storage_account>.dfs.core.windows.net/silver/shipment_status/',
+    BULK 'https://adlslogisticsdepi19.dfs.core.windows.net/silver/shipment_status/',
     FORMAT = 'DELTA'
 ) AS rows;
 GO
@@ -25,7 +25,7 @@ GO
 CREATE OR ALTER VIEW dbo.vw_last_ping_live AS
 SELECT *
 FROM OPENROWSET(
-    BULK 'https://<storage_account>.dfs.core.windows.net/silver/last_ping/',
+    BULK 'https://adlslogisticsdepi19.dfs.core.windows.net/silver/last_ping/',
     FORMAT = 'DELTA'
 ) AS rows;
 GO
